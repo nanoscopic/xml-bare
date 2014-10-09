@@ -1,0 +1,12 @@
+0.01
+    [] Fix all of the various warnings in the XML parser code
+    [] Properly use the hashing library as an imported library rather than dumping
+       all of the code in.
+    [] Modify the parser itself to generate the proper hash structure, rather than
+       doing it in a two phase way.
+
+0.00
+    [0.01] Port Bare.xs from CPAN XML::Bare to xmlbare.c/xmlbare.h
+    [0.01] Create typed storage system for storing both arrays and hashes
+    [0.01] Create a very basic array system for sets of nodes
+    [0.01] Create initial test code to demonstrate usage of the system
