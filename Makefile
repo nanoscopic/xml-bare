@@ -1,11 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -O2
-COMPILE = $(CC) $(CFLAGS) -c
+CFLAGS = -Wall -O2 -g
+COMPILE = $(CC) $(CFLAGS) -c -g -m64
 
 all: test
 
 test: main.o parser.o xmlbare.o sh_bighash.o sh_hash.o sh_hash_func.o sh_page.o sh_page_manager.o
 	$(CC) -o test main.o parser.o xmlbare.o sh_bighash.o sh_hash.o sh_hash_func.o sh_page.o sh_page_manager.o
+
+combined: parser.o xmlbare.o sh_bighash.o sh_hash.o sh_hash_func.o sh_page.o sh_page_manager.o
+	ld -r parser.o xmlbare.o sh_bighash.o sh_hash.o sh_hash_func.o sh_page.o sh_page_manager.o -o combined.o
 
 parser.o: parser.c
 	$(COMPILE) -o parser.o parser.c
