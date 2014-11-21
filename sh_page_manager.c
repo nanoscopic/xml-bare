@@ -17,6 +17,14 @@ int sh_page_manager__store_z( sh_page_manager *self, sh_hash *hashob, char *name
   return sh_hash__store_z( hashob, self, pageob, name, value );
 }
 
+STORED_TYPE *sh_page_manager__del( sh_page_manager *self, sh_hash *hashob, char *name, u1 namelen ) {
+  #ifdef DEBUG
+  printf("\nPagenum:%i\n",hashob->mypage );
+  #endif
+  sh_page *pageob = sh_page_manager__getpage_by_pagenum( self, hashob->mypage );
+  return sh_hash__del( hashob, self, pageob, name, namelen );
+}
+
 int sh_page_manager__store( sh_page_manager *self, sh_hash *hashob, char *name, u1 namelen, STORED_TYPE value ) {
   #ifdef DEBUG
   printf("\nPagenum:%i\n",hashob->mypage );
@@ -60,7 +68,11 @@ STORED_TYPE *sh_page_manager__fetch_z( sh_page_manager *self, sh_hash *hashob, c
 }
 
 STORED_TYPE *sh_page_manager__fetch( sh_page_manager *self, sh_hash *hashob, char *name, u1 namelen ) {
-  return sh_hash__fetch( hashob, self, sh_page_manager__getpage_by_pagenum( self, hashob->mypage ), name, namelen );
+  #ifdef DEBUG
+  printf("Attempting to fetch name \"%.*s\" from hash %p\n", namelen, name, hashob );
+  #endif
+  sh_page *page = sh_page_manager__getpage_by_pagenum( self, hashob->mypage );
+  return sh_hash__fetch( hashob, self, page, name, namelen );
 }
 
 STORED_TYPE *sh_page_manager__fetch_bighash( sh_page_manager *self, sh_bighash *hashob, char *name, u1 namelen ) {
@@ -69,6 +81,10 @@ STORED_TYPE *sh_page_manager__fetch_bighash( sh_page_manager *self, sh_bighash *
 
 sh_page_manager *sh_page_manager__new() {
   sh_page_manager *self = ( sh_page_manager *) malloc( sizeof( struct sh_page_manager__s ) );//new sh_page_manager_;
+  if( !self ) {
+      printf("Cannot allocate page manager structure");
+      exit(1);
+  }
   memset( self, 0, sizeof( struct sh_page_manager__s ) );
   self->curpage = 0;
   memset( self->pages, 0, MAX_NUM_PAGES*sizeof( sh_page * ) ); // Can have up to 255 pages
@@ -82,6 +98,9 @@ void sh_page_manager__destroy( struct sh_page_manager__s *self ) {
 }
 
 sh_page *sh_page_manager__getpage_by_pagenum( struct sh_page_manager__s *self, PAGE_ID_TYPE pagenum ) {
+  #ifdef DEBUG
+  printf("Attempting to fetch page number %i\n", pagenum );
+  #endif
   sh_page *ref = self->pages[ pagenum ];
   if( !ref ) {
     ref = self->pages[ pagenum ] = sh_page__new( pagenum );
@@ -121,19 +140,21 @@ int page_full( sh_page *self ) {
 }
 
 sh_hash *sh_page_manager__new_hash( struct sh_page_manager__s *self ) {
+  PAGE_ID_TYPE curpage = self->curpage;
   #ifdef DEBUG
-  printf("Attempt to create hash\n");
+  printf("Attempt to create hash - curpage = %i\n", curpage );
   #endif
   sh_page *pageob = sh_page_manager__getpage( self );
   if( sh_page__full( pageob ) ) {
     self->curpage++;
     pageob = sh_page_manager__getpage( self );
   }
-  sh_hash *newhash = sh_hash__new( self->curpage, pageob );
+  sh_hash *newhash = sh_hash__new( curpage, pageob );
   if( !newhash ) {
     printf("Cannot allocate\n");
     exit(1);
   }
+  
   return newhash;
 }
 

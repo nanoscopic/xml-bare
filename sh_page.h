@@ -16,6 +16,7 @@ int          sh_page__store_z(   sh_page *self, HASH_ID_TYPE id, char *name, u4 
 int          sh_page__store(     sh_page *self, HASH_ID_TYPE id, char *name, u1 namelen, u4 offset, STORED_TYPE value );
 STORED_TYPE *sh_page__fetch_z(   sh_page *self, HASH_ID_TYPE id, char *name, u4 offset  );
 STORED_TYPE *sh_page__fetch(     sh_page *self, HASH_ID_TYPE id, char *name, u1 namelen, u4 offset  ); // null terminated string
+STORED_TYPE *sh_page__del(       sh_page *self, HASH_ID_TYPE id, char *name, u1 namelen, u4 offset  ); // null terminated string
 HASH_ID_TYPE sh_page__newid(     sh_page *self );
 u4           sh_page__newoffset( sh_page *self );
 u1           sh_page__emptyish(  sh_page *self );

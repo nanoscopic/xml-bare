@@ -34,12 +34,35 @@ sh_hash *sh_hash__new( PAGE_ID_TYPE pagenum, sh_page *pageob ) {
   self->offset = sh_page__newoffset( pageob );
   self->head = 0;
   self->numstored = 0;
+  
+  #ifdef DEBUG
+  printf("Created hash %p with page %i\n", self, pagenum );
+  #endif
+  
   return self;
 }
 
 int sh_hash__store_z( sh_hash *self, sh_page_manager *man, sh_page *pageob, char *name, STORED_TYPE value ) {
   uint8_t namelen = strlen( name );
   return sh_hash__store( self, man, pageob, name, namelen, value );
+}
+
+STORED_TYPE *sh_hash__del( sh_hash *self, sh_page_manager *man, sh_page *pageob, char *name, uint8_t namelen ) {
+  // attempt initial fetch
+  if( pageob->id != self->mypage ) {
+    printf("Wrong page passed in\n");
+  }
+  
+  STORED_TYPE *res = sh_page__del( pageob, self->id, name, namelen, self->offset );
+  if( res != NULL ) { return res; }
+  //printf("fetch try 1 failed\n");
+  
+  if( self->next ) {
+    sh_page *nextpage = sh_page_manager__getpage_by_pagenum( man, self->next->mypage );
+    return sh_hash__del( self->next, man, nextpage, name, namelen );
+  }
+  
+  return NULL;
 }
 
 int sh_hash__store( sh_hash *self, sh_page_manager *man, sh_page *pageob, char *name, uint8_t namelen, STORED_TYPE value ) {

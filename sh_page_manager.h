@@ -19,6 +19,7 @@ sh_page        *sh_page_manager__getpage_by_pagenum( sh_page_manager *self, PAGE
 sh_page        *sh_page_manager__next_emptyish_page( sh_page_manager *self );
 int             sh_page_manager__store_z(            sh_page_manager *self, sh_hash *hashob   , char *name, STORED_TYPE value );
 int             sh_page_manager__store(              sh_page_manager *self, sh_hash *hashob   , char *name, u1 namelen, STORED_TYPE value );
+STORED_TYPE *   sh_page_manager__del(                sh_page_manager *self, sh_hash *hashob   , char *name, u1 namelen );
 int             sh_page_manager__store_u1(              sh_page_manager *self, sh_hash *hashob   , char *name, u1 namelen, u1 value );
 int             sh_page_manager__store_u2(              sh_page_manager *self, sh_hash *hashob   , char *name, u1 namelen, u2 value );
 int             sh_page_manager__store_u4(              sh_page_manager *self, sh_hash *hashob   , char *name, u1 namelen, u4 value );

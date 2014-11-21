@@ -3,6 +3,9 @@
 #include<string.h>
 #include<stdio.h>
 #include"sh_hash_func.h"
+#ifdef DEBUG
+#include"xmlbare.h"
+#endif
 #include<stdlib.h>
 
 HASH_ID_TYPE sh_page__newid( sh_page *self ) {
@@ -63,7 +66,7 @@ int sh_page__store( sh_page *self, HASH_ID_TYPE hash_id, char *name, u1 namelen,
       #endif
       
       #ifdef DEBUG
-      printf("stored\n" );
+      printf("Stored %p in eptr %p\n", value, eptr );
       #endif
       
       self->stored++;
@@ -120,6 +123,54 @@ STORED_TYPE *sh_page__fetch_z( sh_page *self, HASH_ID_TYPE id, char *name, u4 of
   return sh_page__fetch( self, id, name, namelen, offset );
 }
 
+STORED_TYPE *sh_page__del( sh_page *self, HASH_ID_TYPE hash_id, char *name, u1 namelen, u4 offset ) {
+  u4 hval = hashstr( name, namelen, offset );
+  int setid = hval % PAGE_DIVIDER;
+  
+  #ifdef USE_VERIFY
+  u2 verify = hval % VERIFY_DIVIDER;
+  #endif
+  
+  #ifdef DEBUG
+  printf("Deleting at pos %i with hash id %i\n", setid, hash_id );
+  #endif
+  
+  #ifdef MULTI_TRY
+  u1 trys = 1;
+  while( trys <= MULTI_TRY ) {
+  #endif
+  
+    struct entry *eptr = &self->set[ setid ];
+    if( 
+      eptr->owner == hash_id
+      #ifdef USE_VERIFY
+      && eptr->verify == verify
+      #endif
+      && namelen == eptr->namelen
+      && !memcmp( name, eptr->name, namelen )
+    ) { // success
+      memset( eptr, 0, sizeof( struct entry ) );
+      return &eptr->index;
+    }
+    
+  #ifdef MULTI_TRY
+    trys++;
+    offset += INC;
+    hval = hashstr( name, namelen, offset );
+    setid = hval % PAGE_DIVIDER;
+    #ifdef USE_VERIFY
+    verify = hval % VERIFY_DIVIDER;
+    #endif
+  }
+  #endif
+  
+  #ifdef DEBUG
+  printf("Failed attempting to fetch item %i\n",setid);
+  #endif
+  return NULL;
+  
+}
+
 STORED_TYPE *sh_page__fetch( sh_page *self, HASH_ID_TYPE hash_id, char *name, u1 namelen, u4 offset ) {
   u4 hval = hashstr( name, namelen, offset );
   int setid = hval % PAGE_DIVIDER;
@@ -146,6 +197,18 @@ STORED_TYPE *sh_page__fetch( sh_page *self, HASH_ID_TYPE hash_id, char *name, u1
       && namelen == eptr->namelen
       && !memcmp( name, eptr->name, namelen )
     ) { // success
+      #ifdef DEBUG
+      printf("Fetched %p with ptr %p\n", eptr->index, &eptr->index );
+      if( strncmp( name, "value", 5 ) ) {
+          xmlnode *node = (xmlnode *) eptr->index;
+          if( node->type == XNODE_HASH ) {
+              printf("  Fetched hash %p\n", node->ptr );
+          }
+          if( node->type == XNODE_ARR ) {
+              printf("  Fetched array %p\n", node->ptr );
+          }
+      }
+      #endif
       return &eptr->index;
     }
     

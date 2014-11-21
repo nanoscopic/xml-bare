@@ -53,6 +53,11 @@ xmlnode_array *xmlbare_array__new() {
   array->type = XNODE_ARR;
   array->count = 0;
   array->root = NULL;
+  
+  #ifdef DEBUG
+  printf("Created array %p\n", array );
+  #endif
+  
   return array;
 }
 
@@ -65,8 +70,11 @@ void xmlbare_array__push( xmlnode_array *array, xmlnode *item ) {
   else {
     node->next = array->root;
   }
-  array->root = node;
+  array->root = node;// array root is always an array_node
   array->count++;
+  #ifdef DEBUG
+  printf("Created array node %p pointing to %p\n", node, item );
+  #endif
 }
 
 xmlnode *xmlbare_parser__xml2obj( struct parserc *parser, sh_page_manager *man, struct nodec *curnode ) {
@@ -125,17 +133,39 @@ xmlnode *xmlbare_parser__xml2obj( struct parserc *parser, sh_page_manager *man, 
       
       if( !cur ) {
         xmlnode *ob = xbp( xml2obj, parser, man, curnode );
+        #ifdef DEBUG
+        printf("Creating a node named %.*s under hash %p, storing %p\n", curnode->namelen, curnode->name, output, ob );
+        #endif
         pageman( store, man, output, curnode->name, curnode->namelen, ob );
       }
       else { // there is already a node stored with this name
         cur_type = (*cur)->type;
         if( cur_type == XNODE_HASH ) { // sub value is a hash; must be anode
-          xmlnode_array *newarray = xba( new );
-          //pageman( del, man, output, curnode->name, curnode->namelen );
-          pageman( store, man, output, curnode->name, curnode->namelen, (void *) newarray );
-          xba( push, newarray, *cur );
+          xmlnode_array *newarray = xba( new );// this is a raw array
+          #ifdef DEBUG
+          printf("**** Created new array %p\n", newarray );
+          #endif
+          
+          xmlnode *arr_container = (xmlnode *) malloc( sizeof( xmlnode ) );
+          arr_container->type = XNODE_ARR;
+          arr_container->ptr = newarray;
+          xmlnode *nodeptr = *cur;
+          
+          #ifdef DEBUG
+          printf("**** C-Pushing %p into array, contents=%p\n", nodeptr, nodeptr->ptr );
+          #endif
+          pageman( del, man, output, curnode->name, curnode->namelen ); // we need to do the delete otherwise we will get a conflict
+          pageman( store, man, output, curnode->name, curnode->namelen, (void *) arr_container );
+          xba( push, newarray, nodeptr );
+          #ifdef DEBUG
+          // This cur is a xmlnode of type XNODE_HASH, and ->ptr on it points to an output hash of the first item
+          printf("**** A-Pushing %p into array, contents=%p\n", nodeptr, nodeptr->ptr );
+          #endif
           xmlnode *ob = xbp( xml2obj, parser, man, curnode );
           xba( push, newarray, ob );
+          #ifdef DEBUG
+          printf("**** B-Pushing %p into array, contents=%p\n", ob, ob->ptr );
+          #endif
         }
         else if( cur_type == XNODE_ARR ) {
           xmlnode *ob = xbp( xml2obj, parser, man, curnode );
